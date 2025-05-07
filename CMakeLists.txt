@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(carl-parser)
 
 option(BUILD_JAR "Built ANTLR jar file" OFF)
+option(PORTABLE "Enable portable build without hardware-specific compiler flags." OFF)
 
 set(DYNAMIC_EXT ".so")
 set(STATIC_EXT ".a")
@@ -34,7 +35,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") # Matches "Clang" and "AppleClan
         message(STATUS "Using clang ${CMAKE_CXX_COMPILER_VERSION}")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
     endif()
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_RELEASE_FLAGS} -O3 -fomit-frame-pointer -msse -msse2 -funroll-loops")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_RELEASE_FLAGS} -O3 -fomit-frame-pointer -funroll-loops")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_DEBUG_FLAGS} -O1")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     message(STATUS "Using g++ ${CMAKE_CXX_COMPILER_VERSION}")
@@ -45,6 +46,11 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 else()
     message(WARNING "Possibly unsupported compiler ${CMAKE_CXX_COMPILER_ID}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+endif()
+
+# In release mode, we turn on even more optimizations if we do not have to provide a portable binary.
+if (NOT PORTABLE AND (NOT APPLE_SILICON OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)))
+	set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
 endif()
 
 # Require carl
