@@ -7,7 +7,7 @@ This is an [ANTLR](http://www.antlr.org)-based parser which is meant as an exten
 
 The parser requires the following tools:
 - [CArL](https://github.com/moves-rwth/carl-storm)
-- [Maven](https://maven.apache.org/)
+- Java
 
 ### Building
 
@@ -24,16 +24,6 @@ You can run tests with
 
 ```bash
 make test
-```
-
-### Frequent errors
-
-On macOS, there is a known problem with the rpath, which might lead to an error when executing the tests.
-The problem can be alleviated by re-running both
-
-```bash
-cmake ..
-make
 ```
 
 ### Authors:
