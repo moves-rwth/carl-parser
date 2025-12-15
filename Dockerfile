@@ -28,8 +28,7 @@ ARG cmake_args=""
 ######################
 RUN apt-get update -qq
 RUN apt-get install -y --no-install-recommends \
-    maven \
-    uuid-dev
+    default-jre
 
 
 # Build Carl-parser

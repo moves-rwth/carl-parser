@@ -84,7 +84,7 @@ jobs:
       - name: Git clone
         uses: actions/checkout@v6
       - name: Install dependencies
-        # cmake, gmp and maven are already installed
+        # cmake, gmp and java are already installed
         run: |
           brew update
           brew install boost cln ginac
