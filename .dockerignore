@@ -1,0 +1,9 @@
+Dockerfile
+#Git files
+.git
+.git-blame-ignore-revs
+.github
+.gitignore
+/build
+/lib/
+/src/generated
