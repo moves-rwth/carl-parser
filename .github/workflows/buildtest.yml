@@ -1,0 +1,169 @@
+name: Build Test
+# Builds and tests carl-parser on various platforms
+
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    # run weekly
+    - cron: '0 10 * * 2'
+  # needed to trigger the workflow manually
+  workflow_dispatch:
+  pull_request:
+
+env:
+  # GitHub runners currently have 4 cores
+  NR_JOBS: "4"
+
+jobs:
+  linuxTests:
+    name: Linux Tests (${{ matrix.distro }}, ${{ matrix.build_type }}) on ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        distro: ["debian-12", "ubuntu-24.04", "debian-13", "minimal_dependencies"]
+        build_type: ["Debug", "Release"]
+        runner: [ubuntu-latest]
+        include:
+          - distro: "latest"
+            runner: ubuntu-24.04-arm
+            build_type: "Debug"
+          - distro: "latest"
+            runner: ubuntu-24.04-arm
+            build_type: "Release"
+
+    steps:
+      - name: Git clone
+        uses: actions/checkout@v6
+      - name: Build Carl-parser from Dockerfile
+        run: |
+          docker build -t movesrwth/carl-parser:ci . \
+            -f .github/workflows/Dockerfile.linux \
+            --build-arg BASE_IMAGE=movesrwth/storm-basesystem:${{ matrix.distro }} \
+            --build-arg build_type="${{ matrix.build_type }}" \
+            --build-arg no_threads=${NR_JOBS} \
+      - name: Run Docker
+        run: docker run -d -it --name ci movesrwth/carl-parser:ci
+      - name: Build tests
+        run: docker exec ci bash -c "cd /opt/carl-parser/build; make -j ${NR_JOBS}"
+      - name: Run tests
+        run: docker exec ci bash -c "cd /opt/carl-parser/build; ctest test --output-on-failure"
+
+
+  macTests:
+    name: macOS Tests (${{ matrix.config.name }}, ${{ matrix.config.build_type }})
+    strategy:
+      matrix:
+        config:
+          - {name: "XCode 15.4, ARM",
+             distro: "macos-14",
+             xcode: "15.4",
+             build_type: "Debug"
+            }
+          - {name: "XCode Latest, ARM",
+             distro: "macos-15",
+             xcode: "latest-stable",
+             buildType: "Debug"
+            }
+          - {name: "XCode Latest, Intel",
+             distro: "macos-15-intel",
+             xcode: "latest-stable",
+             buildType: "Debug"
+            }
+          - {name: "XCode 26, ARM",
+             distro: "macos-26",
+             xcode: "26",
+             build_type: "Debug"
+            }
+    runs-on: ${{ matrix.config.distro }}
+    steps:
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.config.xcode }}
+      - name: Git clone
+        uses: actions/checkout@v6
+      - name: Install dependencies
+        # cmake, gmp and maven are already installed
+        run: |
+          brew update
+          brew install boost cln ginac
+      - name: Git clone Carl-storm
+        uses: actions/checkout@v6
+        with:
+          repository: moves-rwth/carl-storm
+          path: carl-storm
+      - name: Build Carl-storm
+        working-directory: ./carl-storm
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE="${{ matrix.config.build_type }}"
+      - name: Build Carl-storm
+        working-directory: ./carl-storm/build
+        run: make lib_carl -j ${NR_JOBS}
+      - name: Configure carl-parser
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE="${{ matrix.config.build_type }}"
+      - name: Build Carl-parser
+        working-directory: ./build
+        run: make -j ${NR_JOBS}
+      - name: Run tests
+        working-directory: ./build
+        run: ctest test--output-on-failure
+
+
+  ci:
+    name: Test (${{ matrix.build_type.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type:
+          - {name: "Debug",
+             dockerTag: "ci-debug",
+             baseImg: "carl-storm:ci-debug"
+            }
+          - {name: "Release",
+             dockerTag: "ci",
+             baseImg: "carl-storm:ci"
+            }
+    steps:
+      - name: Git clone
+        uses: actions/checkout@v6
+      - name: Build Carl-storm from Dockerfile
+        run: |
+          docker build -t movesrwth/carl-parser:${{ matrix.build_type.dockerTag }} . \
+            --build-arg BASE_IMAGE=movesrwth/${{ matrix.build_type.baseImg }} \
+            --build-arg build_type="${{ matrix.build_type.name }}" \
+            --build-arg no_threads=${NR_JOBS}
+      - name: Run Docker
+        run: docker run -d -it --name ci movesrwth/carl-parser:${{ matrix.build_type.dockerTag }}
+      - name: Build tests
+        run: docker exec ci bash -c "cd /opt/carl-parser/build; make -j ${NR_JOBS}"
+      - name: Run tests
+        run: docker exec ci bash -c "cd /opt/carl-parser/build; ctest test --output-on-failure"
+
+  notify:
+    name: Email notification
+    runs-on: ubuntu-latest
+    needs: [linuxTests, macTests, ci]
+    # Only run in main repo and even if previous step failed
+    if: github.repository_owner == 'moves-rwth' && always()
+    steps:
+      - uses: technote-space/workflow-conclusion-action@v3
+      - uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: ${{ secrets.STORM_CI_MAIL_SERVER }}
+          server_port: 587
+          username: ${{ secrets.STORM_CI_MAIL_USERNAME }}
+          password: ${{ secrets.STORM_CI_MAIL_PASSWORD }}
+          subject: "[You broke it] CI run failed for ${{ github.repository }}"
+          body:
+            "CI job of ${{ github.repository }} has failed for commit ${{ github.sha }}.\n\
+            The error type is: ${{ env.WORKFLOW_CONCLUSION }}.\n\n\
+            For more information, see https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          to: ${{ secrets.STORM_CI_MAIL_RECIPIENTS }}
+          from: Github Actions <you-broke-it@stormchecker.org>
+        if: env.WORKFLOW_CONCLUSION != 'success' # notify only if failure
