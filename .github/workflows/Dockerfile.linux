@@ -28,9 +28,7 @@ ARG cmake_args=""
 ######################
 RUN apt-get update -qq
 RUN apt-get install -y --no-install-recommends \
-    maven \
-    uuid-dev \
-    pkg-config # needed for minimal dependencies
+    default-jre
 
 
 # Build Carl-storm

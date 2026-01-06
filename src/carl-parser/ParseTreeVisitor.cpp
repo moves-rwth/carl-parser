@@ -207,15 +207,15 @@ namespace carlparser {
 		} else if (ctx->constraint()) {
 			return ctx->constraint()->accept(this);
 		} else if (ctx->arith_nary()) {
-			return boost::apply_visitor(to_antlr_any(), ctx->arith_nary()->accept(this).template as<ArithType>());
+			return boost::apply_visitor(to_antlr_any(), std::any_cast<ArithType>(ctx->arith_nary()->accept(this)));
 		} else if (ctx->arith_unary()) {
-            return boost::apply_visitor(to_antlr_any(), ctx->arith_unary()->accept(this).template as<ArithType>());
+            return boost::apply_visitor(to_antlr_any(), std::any_cast<ArithType>(ctx->arith_unary()->accept(this)));
         } else if (ctx->real_variable()) {
-			return boost::apply_visitor(to_antlr_any(), ctx->real_variable()->accept(this).template as<ArithType>());
+			return boost::apply_visitor(to_antlr_any(), std::any_cast<ArithType>(ctx->real_variable()->accept(this)));
 		} else if (ctx->number()) {
-			return boost::apply_visitor(to_antlr_any(), ctx->number()->accept(this).template as<ArithType>());
+			return boost::apply_visitor(to_antlr_any(), std::any_cast<ArithType>(ctx->number()->accept(this)));
 		} else if (ctx->boolean()) {
-			return ctx->boolean()->accept(this).template as<Formula<Pol>>();
+			return std::any_cast<Formula<Pol>>(ctx->boolean()->accept(this));
 		}
 		throw std::runtime_error("Unknown formula rule");
 	}
@@ -227,7 +227,7 @@ namespace carlparser {
 		} else if (ctx->formula_unary()) {
 			return ctx->formula_unary()->accept(this);
 		} else if (ctx->constraint()) {
-			return Formula<Pol>(ctx->constraint()->accept(this).template as<Constraint<Pol>>());
+			return Formula<Pol>(std::any_cast<Constraint<Pol>>(ctx->constraint()->accept(this)));
 		} else if (ctx->boolean()) {
 			return ctx->boolean()->accept(this);
 		} else if (ctx->bool_variable()) {
@@ -238,26 +238,26 @@ namespace carlparser {
 
 	template<typename Pol>
 	antlrcpp::Any ParseTreeVisitor<Pol>::visitFormula_nary(SerializationParser::Formula_naryContext *ctx) {
-		FormulaType type = ctx->form_op_nary()->accept(this).template as<FormulaType>();
+		FormulaType type = std::any_cast<FormulaType>(ctx->form_op_nary()->accept(this));
 		if (type == FormulaType::ITE) {
 			if (ctx->form_expr().size() != 3) {
 				throw std::runtime_error("ITE formula requires 3 subformulae");
 			}
-			return Formula<Pol>(type, ctx->form_expr(0)->accept(this).template as<Formula<Pol>>(),
-			               ctx->form_expr(1)->accept(this).template as<Formula<Pol>>(),
-			               ctx->form_expr(2)->accept(this).template as<Formula<Pol>>());
+			return Formula<Pol>(type, std::any_cast<Formula<Pol>>(ctx->form_expr(0)->accept(this)),
+			               std::any_cast<Formula<Pol>>(ctx->form_expr(1)->accept(this)),
+			               std::any_cast<Formula<Pol>>(ctx->form_expr(2)->accept(this)));
 		} else {
 			if (ctx->form_expr().size() < 2) {
 				if (type != FormulaType::AND && type != FormulaType::OR) {
 					throw std::runtime_error("formula requires >1 subformulae");
 				}
-				return ctx->form_expr(0)->accept(this).template as<Formula<Pol>>();
+				return std::any_cast<Formula<Pol>>(ctx->form_expr(0)->accept(this));
 			}
 			size_t index = 0;
-			Formula<Pol> form = ctx->form_expr(index)->accept(this).template as<Formula<Pol>>();
+			Formula<Pol> form = std::any_cast<Formula<Pol>>(ctx->form_expr(index)->accept(this));
 			++index;
 			for(; index < ctx->form_expr().size(); ++index) {
-				form = Formula<Pol>(type, form, ctx->form_expr(index)->accept(this).template as<Formula<Pol>>());
+				form = Formula<Pol>(type, form, std::any_cast<Formula<Pol>>(ctx->form_expr(index)->accept(this)));
 			}
 			return form;
 		}
@@ -284,15 +284,15 @@ namespace carlparser {
 
 	template<typename Pol>
 	antlrcpp::Any ParseTreeVisitor<Pol>::visitFormula_unary(SerializationParser::Formula_unaryContext *ctx) {
-		auto formula = ctx->form_expr()->accept(this).template as<Formula<Pol>>();
+		auto formula = std::any_cast<Formula<Pol>>(ctx->form_expr()->accept(this));
 		return Formula<Pol>(FormulaType::NOT, formula);
 	}
 
 	template<typename Pol>
 	antlrcpp::Any ParseTreeVisitor<Pol>::visitConstraint(SerializationParser::ConstraintContext *ctx) {
 		auto const& text = ctx->token->getText();
-	    auto lhs = ctx->arith_expr(0)->accept(this).template as<ArithType>();
-        auto rhs = ctx->arith_expr(1)->accept(this).template as<ArithType>();
+	    auto lhs = std::any_cast<ArithType>(ctx->arith_expr(0)->accept(this));
+        auto rhs = std::any_cast<ArithType>(ctx->arith_expr(1)->accept(this));
 		auto arith_expr = boost::apply_visitor(perform_subtraction<ArithType, Pol>(), lhs, rhs);
 		if (text == "=") {
 			return boost::apply_visitor(make_constraint<Pol>(Relation::EQ), arith_expr);
@@ -328,26 +328,26 @@ namespace carlparser {
 	template<typename Pol>
 	antlrcpp::Any ParseTreeVisitor<Pol>::visitArith_nary(SerializationParser::Arith_naryContext *ctx) {
 		auto const& text = ctx->token->getText();
-		auto baseExpr = ctx->arith_expr(0)->accept(this).template as<ArithType>();
+		auto baseExpr = std::any_cast<ArithType>(ctx->arith_expr(0)->accept(this));
 		if (text == "+") {
 			for(size_t i = 1; i < ctx->arith_expr().size(); ++i) {
-				auto nextExpr = ctx->arith_expr(i)->accept(this).template as<ArithType>();
+				auto nextExpr = std::any_cast<ArithType>(ctx->arith_expr(i)->accept(this));
 				baseExpr = boost::apply_visitor(perform_addition<ArithType, Pol>(), baseExpr, nextExpr);
 			}
 		} else if (text == "-") {
             for(size_t i = 1; i < ctx->arith_expr().size(); ++i) {
 				auto nextExpr = ctx->arith_expr(i)->accept(this);
-				baseExpr = boost::apply_visitor(perform_subtraction<ArithType, Pol>(), baseExpr, nextExpr.template as<ArithType>());
+				baseExpr = boost::apply_visitor(perform_subtraction<ArithType, Pol>(), baseExpr, std::any_cast<ArithType>(nextExpr));
 			}
 		} else if (text == "*") {
 			for(size_t i = 1; i < ctx->arith_expr().size(); ++i) {
 				auto nextExpr = ctx->arith_expr(i)->accept(this);
-				baseExpr = boost::apply_visitor(perform_multiplication<ArithType, Pol>(), baseExpr, nextExpr.template as<ArithType>());
+				baseExpr = boost::apply_visitor(perform_multiplication<ArithType, Pol>(), baseExpr, std::any_cast<ArithType>(nextExpr));
 			}
 		} else if (text == "/") {
 			for(size_t i = 1; i < ctx->arith_expr().size(); ++i) {
 				auto nextExpr = ctx->arith_expr(i)->accept(this);
-				baseExpr = boost::apply_visitor(perform_division<ArithType, Pol>(), baseExpr, nextExpr.template as<ArithType>());
+				baseExpr = boost::apply_visitor(perform_division<ArithType, Pol>(), baseExpr, std::any_cast<ArithType>(nextExpr));
 			}
 		} else {
 			throw std::runtime_error("Unknown arithmetic operator");
@@ -358,7 +358,7 @@ namespace carlparser {
     template<typename Pol>
     antlrcpp::Any ParseTreeVisitor<Pol>::visitArith_unary(SerializationParser::Arith_unaryContext *ctx) {
         auto const& text = ctx->token->getText();
-        auto baseExpr = ctx->arith_expr()->accept(this).template as<ArithType>();
+        auto baseExpr = std::any_cast<ArithType>(ctx->arith_expr()->accept(this));
         if (text == "+") {
 			// Skip.
         } else if (text == "-") {

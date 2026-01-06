@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.22)
 project(carl-parser)
 
-option(BUILD_JAR "Built ANTLR jar file" OFF)
+set(CMAKE_CXX_STANDARD 20)
+
 option(PORTABLE "Enable portable build without hardware-specific compiler flags." OFF)
 
 set(DYNAMIC_EXT ".so")
@@ -63,12 +64,6 @@ message(STATUS "Using carl ${carl_VERSION} from ${carlLOCATION}.")
 include(ExternalProject)
 SET_DIRECTORY_PROPERTIES(PROPERTIES EP_PREFIX ${CMAKE_BINARY_DIR}/resources)
 
-set(ANTLR_VERSION "4.7.2")
-if (BUILD_JAR)
-    message(STATUS "Built jar file of ANTLR ${ANTLR_VERSION}")
-else()
-    message(STATUS "Use shipped jar file of ANTLR ${ANTLR_VERSION}")
-endif()
 include(resources/antlr4.cmake)
 
 # Add actual sources
@@ -89,7 +84,7 @@ set(INCLUDE_DIR include/)
 include(CMakePackageConfigHelpers)
 include(cmake/export_target.cmake)
 
-export_target(DEP_TARGETS antlr4shared)
+export_target(DEP_TARGETS antlr4)
 set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src")
 configure_package_config_file(
         cmake/carlparserConfig.cmake.in
@@ -97,8 +92,3 @@ configure_package_config_file(
         INSTALL_DESTINATION ${PROJECT_BINARY_DIR}
         PATH_VARS INCLUDE_DIR
 )
-
-
-if (APPLE)
-    message(WARNING "If tests are unsuccessful or errors occur, try running 'cmake ..' and 'make' once again.")
-endif()

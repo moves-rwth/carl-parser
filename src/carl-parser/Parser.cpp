@@ -57,22 +57,22 @@ namespace carlparser {
         tree::ParseTree *tree = parser.start();
         antlrcpp::Any resultData = tree->accept(&visitor);
 
-        if (resultData.is < carl::Formula < Pol >> ()) {
-            return resultData.as < carl::Formula < Pol >> ();
-        } else if (resultData.is < carl::Constraint < Pol >> ()) {
-            return resultData.as < carl::Constraint < Pol >> ();
-        } else if (resultData.is < carl::RationalFunction < Pol >> ()) {
-            return resultData.as < carl::RationalFunction < Pol >> ();
-        } else if (resultData.is<Pol>()) {
-            return resultData.as<Pol>();
-        } else if (resultData.is < carl::Term < typename Pol::CoeffType >> ()) {
-            return resultData.as < carl::Term < typename Pol::CoeffType >> ();
-        } else if (resultData.is<carl::Monomial::Arg>()) {
-            return resultData.as<carl::Monomial::Arg>();
-        } else if (resultData.is<typename Pol::CoeffType>()) {
-            return resultData.as<typename Pol::CoeffType>();
-        } else if (resultData.is<carl::Variable>()) {
-            return resultData.as<carl::Variable>();
+        if (resultData.type() == typeid(carl::Formula<Pol>)) {
+            return std::any_cast<carl::Formula<Pol>>(resultData);
+        } else if (resultData.type() == typeid(carl::Constraint<Pol>)) {
+            return std::any_cast<carl::Constraint<Pol>>(resultData);
+        } else if (resultData.type() == typeid(carl::RationalFunction<Pol>)) {
+            return std::any_cast<carl::RationalFunction<Pol>>(resultData);
+        } else if (resultData.type() == typeid(Pol)) {
+            return std::any_cast<Pol>(resultData);
+        } else if (resultData.type() == typeid(carl::Term<typename Pol::CoeffType>)) {
+            return std::any_cast<carl::Term<typename Pol::CoeffType>>(resultData);
+        } else if (resultData.type() == typeid(carl::Monomial::Arg)) {
+            return std::any_cast<carl::Monomial::Arg>(resultData);
+        } else if (resultData.type() == typeid(typename Pol::CoeffType)) {
+            return std::any_cast<typename Pol::CoeffType>(resultData);
+        } else if (resultData.type() == typeid(carl::Variable)) {
+            return std::any_cast<carl::Variable>(resultData);
         } else {
             throw std::runtime_error("Unexpected parser result");
         }
