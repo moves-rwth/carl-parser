@@ -91,7 +91,7 @@ jobs:
       - name: Git clone Carl-storm
         uses: actions/checkout@v6
         with:
-          repository: moves-rwth/carl-storm
+          repository: stormchecker/carl-storm
           path: carl-storm
       - name: Build Carl-storm
         working-directory: ./carl-storm
@@ -150,7 +150,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [linuxTests, macTests, ci]
     # Only run in main repo and even if previous step failed
-    if: github.repository_owner == 'moves-rwth' && always()
+    if: github.repository_owner == 'stormchecker' && always()
     steps:
       - uses: technote-space/workflow-conclusion-action@v3
       - uses: dawidd6/action-send-mail@v16

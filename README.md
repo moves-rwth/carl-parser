@@ -1,12 +1,12 @@
 Parser for carl data structures
 --------------------------------------
 
-This is an [ANTLR](http://www.antlr.org)-based parser which is meant as an extension to [CArL](https://github.com/moves-rwth/carl-storm).
+This is an [ANTLR](http://www.antlr.org)-based parser which is meant as an extension to [CArL](https://github.com/stormchecker/carl-storm).
 
 ### Requirements
 
 The parser requires the following tools:
-- [CArL](https://github.com/moves-rwth/carl-storm)
+- [CArL](https://github.com/stormchecker/carl-storm)
 - Java
 
 ### Building
