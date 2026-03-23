@@ -91,7 +91,7 @@ jobs:
       - name: Git clone Carl-storm
         uses: actions/checkout@v6
         with:
-          repository: moves-rwth/carl-storm
+          repository: stormchecker/carl-storm
           path: carl-storm
       - name: Build Carl-storm
         working-directory: ./carl-storm
