@@ -43,9 +43,9 @@ COPY . .
 RUN mkdir -p /opt/carl-parser/build
 WORKDIR /opt/carl-parser/build
 
-# Configure Carl-storm
+# Configure Carl-parser
 RUN cmake -DCMAKE_BUILD_TYPE=$build_type \
-          -DPORTABLE=ON \
+          -DCARLPARSER_PORTABLE=ON \
           $cmake_args ..
 
 # Build Carl-parser library
