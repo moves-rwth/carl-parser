@@ -3,7 +3,7 @@ project(carl-parser)
 
 set(CMAKE_CXX_STANDARD 20)
 
-option(PORTABLE "Enable portable build without hardware-specific compiler flags." OFF)
+option(CARLPARSER_PORTABLE "Enable portable build without hardware-specific compiler flags." OFF)
 
 set(DYNAMIC_EXT ".so")
 set(STATIC_EXT ".a")
@@ -50,15 +50,15 @@ else()
 endif()
 
 # In release mode, we turn on even more optimizations if we do not have to provide a portable binary.
-if (NOT PORTABLE AND (NOT APPLE_SILICON OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)))
+if (NOT CARLPARSER_PORTABLE AND (NOT APPLE_SILICON OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)))
 	set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
 endif()
 
 # Require carl
 find_package(carl REQUIRED)
 # Output information about carl
-get_target_property(carlLOCATION lib_carl LOCATION)
-message(STATUS "Using carl ${carl_VERSION} from ${carlLOCATION}.")
+get_target_property(carl_LOCATION lib_carl LOCATION)
+message(STATUS "Using carl ${carl_VERSION} from ${carl_LOCATION}.")
 
 # External projects
 include(ExternalProject)
